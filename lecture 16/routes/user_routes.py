@@ -3,7 +3,7 @@ from lecture_db import LectureDB
 from werkzeug.security import generate_password_hash, check_password_hash
 from auth.auth_user import UserLogin
 from flask_login import login_user, login_required, current_user
-from forms.forms import LoginForm
+from forms.forms import LoginForm, RegisterForm
 
 
 def user_routes(app, l_db: LectureDB):
@@ -26,27 +26,17 @@ def user_routes(app, l_db: LectureDB):
 
     @app.route("/register", methods=["POST", "GET"])
     def register():
-        if request.method == "POST":
-            session.pop("_flashes", None)
-            if (
-                len(request.form["name"]) > 4
-                and len(request.form["email"]) > 4
-                and len(request.form["psw"]) > 4
-                and request.form["psw"] == request.form["psw2"]
-            ):
-                hash = generate_password_hash(request.form["psw"])
-                res = l_db.add_user(request.form["name"], request.form["email"], hash)
+        form = RegisterForm()
+        if form.validate_on_submit():
+                hash = generate_password_hash(request.form['psw'])
+                res = l_db.add_user(form.name.data, form.email.data, hash)
                 if res:
                     flash("Вы успешно зарегистрированы", "success")
-                    return redirect(url_for("login"))
+                    return redirect(url_for('login'))
                 else:
                     flash("Ошибка при добавлении в БД", "error")
-            else:
-                flash("Неверно заполнены поля", "error")
-
-        return render_template(
-            "register.html", menu=l_db.get_menu(), title="Регистрация"
-        )
+    
+        return render_template("register.html", menu=l_db.get_menu(), title="Регистрация", form=form)
 
     @app.route("/contact", methods=["POST", "GET"])
     def contact():
